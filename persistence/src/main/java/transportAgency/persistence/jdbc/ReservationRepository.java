@@ -1,0 +1,157 @@
+package example.repository;
+
+import example.domain.Reservation;
+import example.domain.Trip;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import example.utils.JDBCUtils;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
+
+public class ReservationRepository implements IReservationRepository {
+
+    private static JDBCUtils dbUtils;
+
+    private static final Logger logger = LogManager.getLogger();
+
+    private final TripRepository tripRepository;
+
+    public ReservationRepository(Properties properties, TripRepository tripRepository) {
+        this.tripRepository = tripRepository;
+        logger.info("Init ReservationRepository, properties: {}", properties);
+        dbUtils = new JDBCUtils(properties);
+    }
+
+    @Override
+    public Reservation findOne(Long id)  {
+        logger.traceEntry("Find reservation {} ", id);
+        Connection con = dbUtils.getConnection();
+        try (PreparedStatement preStmt = con.prepareStatement("select * from reservations where id = ?")) {
+            preStmt.setLong(1, id);
+            try (ResultSet result = preStmt.executeQuery()) {
+                if (result.next()) {
+                    Reservation reservation = createReservation(result);
+                    logger.traceExit("Reservation {} found", id);
+                    return reservation;
+                }
+            } catch (Exception e) {
+                logger.error(e);
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException ex) {
+            logger.error(ex);
+        }
+        logger.traceExit("Reservation {} not found", id);
+        return null;
+    }
+
+    private Reservation createReservation(ResultSet result) throws SQLException {
+        Long result_id = result.getLong("id");
+        String clientName = result.getString("clientName");
+        Integer noSeats = result.getInt("noSeats");
+        long tripId = result.getLong("trip");
+        Trip trip = tripRepository.findOne(tripId);
+        return new Reservation(result_id, clientName, noSeats, trip);
+    }
+
+    @Override
+    public Iterable<Reservation> findAll() {
+        logger.traceEntry("Find all reservations");
+        List<Reservation> reservationList = new ArrayList<>();
+        Connection con = dbUtils.getConnection();
+        try (PreparedStatement preStmt = con.prepareStatement("select * from reservations")) {
+            try (ResultSet result = preStmt.executeQuery()) {
+                while (result.next())
+                    reservationList.add(createReservation(result));
+            } catch (Exception e) {
+                logger.trace(e);
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException e) {
+            logger.error(e);
+        }
+        logger.traceExit();
+        return reservationList;
+    }
+
+    @Override
+    public void save(Reservation entity) {
+        logger.traceEntry("Save reservation {} ", entity);
+        Connection con = dbUtils.getConnection();
+        try (PreparedStatement preStmt = con.prepareStatement("insert into reservations (clientName, noSeats, trip) values (?,?,?)")) {
+            preStmt.setString(1, entity.getClientName());
+            preStmt.setInt(2, entity.getNoSeats());
+            preStmt.setLong(3, entity.getTrip().getId());
+            int result = preStmt.executeUpdate();
+            logger.trace("Saved {} reservations", result);
+        } catch (SQLException ex) {
+            logger.error(ex);
+        } catch (Exception e) {
+            logger.error(e);
+            throw new RuntimeException(e);
+        }
+        logger.traceExit();
+    }
+
+    @Override
+    public void delete(Long id) {
+        logger.traceEntry("Delete reservation {}", id);
+        Connection con = dbUtils.getConnection();
+        try (PreparedStatement preStmt = con.prepareStatement("delete from reservations where id=?")) {
+            preStmt.setLong(1, id);
+            int result = preStmt.executeUpdate();
+            logger.trace("Deleted {} reservations", result);
+        } catch (SQLException ex) {
+            logger.error(ex);
+        }
+        logger.traceExit();
+    }
+
+    @Override
+    public void update(Long id, Reservation entity) {
+        logger.traceEntry("Update reservation {} ", id);
+        Connection con = dbUtils.getConnection();
+        try (PreparedStatement preparedStatement = con.prepareStatement("update reservations set clientName = ?, noSeats = ?, trip = ? where id = ?")) {
+            preparedStatement.setString(1, entity.getClientName());
+            preparedStatement.setInt(2, entity.getNoSeats());
+            preparedStatement.setLong(3, entity.getTrip().getId());
+            preparedStatement.setLong(4, id);
+            int result = preparedStatement.executeUpdate();
+            logger.trace("Updated {} reservations", result);
+        } catch (SQLException ex) {
+            logger.error(ex);
+        } catch (Exception e) {
+            logger.error(e);
+            throw new RuntimeException(e);
+        }
+        logger.traceExit();
+    }
+
+    @Override
+    public List<Reservation> findAllReservationsForTrip(Trip trip) {
+        logger.traceEntry("Find all reservations for trip {}", trip);
+        List<Reservation> reservationList = new ArrayList<>();
+        Connection con = dbUtils.getConnection();
+        try (PreparedStatement preStmt = con.prepareStatement("select * from reservations where trip=?")) {
+            preStmt.setLong(1, trip.getId());
+            try (ResultSet result = preStmt.executeQuery()) {
+                while (result.next())
+                    reservationList.add(createReservation(result));
+            } catch (Exception e) {
+                logger.trace(e);
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException e) {
+            logger.error(e);
+        }
+        logger.traceExit();
+        return reservationList;
+    }
+}

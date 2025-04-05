@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="439.0" prefWidth="819.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.MainController">
+    <children>
+        <TableView fx:id="tripTable" layoutX="36.0" layoutY="78.0" prefHeight="280.0" prefWidth="329.0">
+            <columns>
+                <TableColumn fx:id="destination" prefWidth="75.0" text="Destinatie" />
+                <TableColumn fx:id="date" prefWidth="75.0" text="Data Plecarii" />
+                <TableColumn fx:id="time" prefWidth="75.0" text="Ora Plecarii" />
+                <TableColumn fx:id="noSeats" prefWidth="102.0" text="Nr. locuri libere" />
+            </columns>
+        </TableView>
+        <Label layoutX="186.0" layoutY="49.0" text="Curse" />
+        <Label layoutX="478.0" layoutY="49.0" text="Locuri" />
+        <TableView fx:id="reservationTable" layoutX="394.0" layoutY="78.0" prefHeight="280.0" prefWidth="200.0">
+            <columns>
+                <TableColumn fx:id="seatNo" prefWidth="86.0" text="Numar loc" />
+                <TableColumn fx:id="clientName" prefWidth="113.0" text="Nume client" />
+            </columns>
+        </TableView>
+        <Label layoutX="625.0" layoutY="58.0" text="Introduceti destinatia:" />
+        <TextField fx:id="destinationField" layoutX="625.0" layoutY="78.0" />
+        <Label layoutX="627.0" layoutY="111.0" text="Introduceti data plecarii:" />
+        <Label layoutX="627.0" layoutY="161.0" text="Introduceti ora plecarii:" />
+        <TextField fx:id="timeField" layoutX="625.0" layoutY="178.0" />
+        <Button layoutX="676.0" layoutY="212.0" mnemonicParsing="false" onAction="#findTripButtonClicked" text="Cauta" />
+        <Label layoutX="627.0" layoutY="251.0" text="Introduceti numele clientului:" />
+        <TextField fx:id="clientField" layoutX="625.0" layoutY="268.0" />
+        <Label layoutX="627.0" layoutY="301.0" text="Introduceti numarul de locuri:" />
+        <TextField fx:id="noSeatsField" layoutX="625.0" layoutY="318.0" />
+        <Button layoutX="673.0" layoutY="352.0" mnemonicParsing="false" onAction="#makeReservationButtonClicked" text="Rezervati" />
+        <Label fx:id="employeeLabel" layoutX="43.0" layoutY="24.0" prefHeight="17.0" prefWidth="155.0" text="Angajat" />
+        <Label fx:id="dateLabel" layoutX="609.0" layoutY="24.0" text="Ora, Data curenta" />
+        <DatePicker fx:id="dateField" layoutX="627.0" layoutY="128.0" prefHeight="25.0" prefWidth="149.0" />
+        <Button layoutX="294.0" layoutY="377.0" mnemonicParsing="false" onAction="#logoutButtonClicked" prefHeight="25.0" prefWidth="200.0" text="Logout" />
+    </children>
+</AnchorPane>
