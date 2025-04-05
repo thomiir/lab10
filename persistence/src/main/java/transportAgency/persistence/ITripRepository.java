@@ -1,6 +1,6 @@
-package example.repository;
+package transportAgency.persistence;
 
-import example.domain.Trip;
+import transportAgency.model.Trip;
 
 import java.sql.Date;
 import java.sql.Time;

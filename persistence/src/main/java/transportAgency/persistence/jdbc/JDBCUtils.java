@@ -1,4 +1,4 @@
-package example.utils;
+package transportAgency.persistence.jdbc;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,7 +10,7 @@ import java.util.Properties;
 
 public class JDBCUtils {
 
-    private Properties jdbcProps;
+    private final Properties jdbcProps;
 
     private static final Logger logger  = LogManager.getLogger();
 

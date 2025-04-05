@@ -1,6 +1,7 @@
-package example.repository;
+package transportAgency.persistence;
 
-import example.domain.Employee;
+
+import transportAgency.model.Employee;
 
 public interface IEmployeeRepository extends IRepository<Long, Employee> {
 

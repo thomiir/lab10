@@ -1,10 +1,11 @@
-package example.repository;
+package transportAgency.persistence.jdbc;
 
-import example.domain.Reservation;
-import example.domain.Trip;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import example.utils.JDBCUtils;
+import transportAgency.model.Reservation;
+import transportAgency.model.Trip;
+import transportAgency.persistence.IReservationRepository;
+import transportAgency.persistence.ITripRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,9 +22,9 @@ public class ReservationRepository implements IReservationRepository {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private final TripRepository tripRepository;
+    private final ITripRepository tripRepository;
 
-    public ReservationRepository(Properties properties, TripRepository tripRepository) {
+    public ReservationRepository(Properties properties, ITripRepository tripRepository) {
         this.tripRepository = tripRepository;
         logger.info("Init ReservationRepository, properties: {}", properties);
         dbUtils = new JDBCUtils(properties);

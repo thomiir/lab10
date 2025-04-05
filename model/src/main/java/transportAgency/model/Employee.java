@@ -1,4 +1,4 @@
-package example.domain;
+package transportAgency.model;
 
 public class Employee extends Entity<Long>{
     private final String username;

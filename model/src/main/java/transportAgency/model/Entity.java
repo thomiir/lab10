@@ -1,4 +1,4 @@
-package example.domain;
+package transportAgency.model;
 
 public class Entity<E> {
     private E id;

@@ -1,7 +1,7 @@
-package example.repository;
+package transportAgency.persistence;
 
-import example.domain.Reservation;
-import example.domain.Trip;
+import transportAgency.model.Reservation;
+import transportAgency.model.Trip;
 
 import java.util.List;
 

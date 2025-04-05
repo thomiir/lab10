@@ -1,4 +1,4 @@
-package example.domain;
+package transportAgency.model;
 
 import java.sql.Date;
 import java.sql.Time;

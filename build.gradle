@@ -6,7 +6,6 @@ plugins {
     id 'org.beryx.jlink' version '2.25.0'
 }
 
-group 'com.example'
 version '1.0-SNAPSHOT'
 
 repositories {
@@ -17,16 +16,13 @@ ext {
     junitVersion = '5.10.2'
 }
 
-sourceCompatibility = '23'
-targetCompatibility = '23'
-
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
 application {
-    mainModule = 'com.example.demo'
-    mainClass = 'com.example.demo.HelloApplication'
+    mainClass = 'example.demo.Main'
+    mainModule = 'example.demo'
 }
 
 javafx {
@@ -38,6 +34,13 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api
+    implementation 'org.apache.logging.log4j:log4j-api:2.23.0'
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api
+    implementation 'org.apache.logging.log4j:log4j-core:2.23.0'
+    // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
+    runtimeOnly 'org.xerial:sqlite-jdbc:3.49.1.0'
 }
 
 test {

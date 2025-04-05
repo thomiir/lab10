@@ -1,9 +1,9 @@
-package example.repository;
+package transportAgency.persistence.jdbc;
 
-import example.domain.Trip;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import example.utils.JDBCUtils;
+import transportAgency.model.Trip;
+import transportAgency.persistence.ITripRepository;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -44,6 +44,7 @@ public class TripRepository implements ITripRepository {
     @Override
     public Trip findOne(Long id)  {
         logger.traceEntry("Find trip {} ", id);
+        System.out.println("find trip" + id);
         Connection con = dbUtils.getConnection();
         try (PreparedStatement preStmt = con.prepareStatement("select * from trips where id = ?")) {
             preStmt.setLong(1, id);

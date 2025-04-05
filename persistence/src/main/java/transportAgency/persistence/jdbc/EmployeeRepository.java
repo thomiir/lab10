@@ -1,9 +1,9 @@
-package example.repository;
+package transportAgency.persistence.jdbc;
 
-import example.domain.Employee;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import example.utils.JDBCUtils;
+import transportAgency.model.Employee;
+import transportAgency.persistence.IEmployeeRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

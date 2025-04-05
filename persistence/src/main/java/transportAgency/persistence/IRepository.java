@@ -1,6 +1,7 @@
-package example.repository;
+package transportAgency.persistence;
 
-import example.domain.Entity;
+
+import transportAgency.model.Entity;
 
 public interface IRepository<ID, E extends Entity<ID>> {
     E findOne(ID id);

@@ -1,8 +1,5 @@
-package example.controller;
+package gui;
 
-import example.demo.ConfigMain;
-import example.service.ReservationService;
-import example.service.TripService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -13,7 +10,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import example.service.EmployeeService;
+import transportAgency.services.IServices;
 
 import java.io.IOException;
 
@@ -21,11 +18,11 @@ public class LoginController {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private EmployeeService employeeService;
+    private MainController mainController;
 
-    private ReservationService reservationService;
+    private IServices service;
 
-    private TripService tripService;
+    private Parent parent;
 
     @FXML
     private TextField username;
@@ -33,17 +30,27 @@ public class LoginController {
     @FXML
     private PasswordField password;
 
-    public void setServices(EmployeeService employeeService, ReservationService reservationService, TripService tripService) {
-        logger.trace("Setting services {} {} {}", employeeService, reservationService, tripService);
-        this.employeeService = employeeService;
-        this.reservationService = reservationService;
-        this.tripService = tripService;
+    public void setServices(IServices service) {
+        logger.trace("Setting service {} ",service);
+        this.service = service;
     }
 
     @FXML
     private void loginButtonClicked() {
         logger.traceEntry("Login button clicked");
-        if (!employeeService.login(username.getText(), password.getText())) {
+        try {
+            if (!service.login(username.getText(), password.getText(), mainController)) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText(null);
+                alert.setContentText("Invalid username or password");
+                alert.showAndWait();
+                username.clear();
+                password.clear();
+                logger.error("Login failed");
+                return;
+            }
+        } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText(null);
@@ -56,11 +63,11 @@ public class LoginController {
         }
 
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(ConfigMain.class.getResource("/views/main-view.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/views/main-view.fxml"));
             Parent root = fxmlLoader.load();
             MainController controller = fxmlLoader.getController();
-            controller.setService(reservationService, tripService);
-            controller.setLoggedEmployee(employeeService.getEmployee(username.getText(), password.getText()));
+            controller.setServices(service);
+            controller.setLoggedEmployee(service.getEmployee(username.getText(), password.getText()));
             Stage stage = new Stage();
             stage.setScene(new Scene(root));
             stage.setTitle("Main");
@@ -75,9 +82,16 @@ public class LoginController {
             alert.showAndWait();
             logger.trace("Login successful");
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error(e);
-            throw new RuntimeException("Error loading FXML", e);
         }
+    }
+
+    public void setMainController(MainController mainController) {
+        this.mainController = mainController;
+    }
+
+    public void setParent(Parent parent) {
+        this.parent = parent;
     }
 }

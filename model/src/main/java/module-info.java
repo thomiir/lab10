@@ -1,2 +1,4 @@
-module $MODULE_NAME$ {
+module transportAgency.model {
+    requires java.sql;
+    exports transportAgency.model;
 }
