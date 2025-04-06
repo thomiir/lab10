@@ -9,12 +9,14 @@ import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import transportAgency.model.Employee;
+import transportAgency.model.Reservation;
 import transportAgency.model.Seat;
 import transportAgency.model.Trip;
 import transportAgency.services.IObserver;
 import transportAgency.services.IServices;
 
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
@@ -28,11 +30,11 @@ public class MainController implements Initializable, IObserver {
     private Employee loggedEmployee;
 
     @FXML private TextField destinationField, timeField, clientField, noSeatsField;
-    @FXML private Label employeeLabel;
+    @FXML public Label employeeLabel;
     @FXML private DatePicker dateField;
     @FXML private TableView<Seat> reservationTable;
     @FXML private TableView<Trip> tripTable;
-    @FXML private TableColumn<Seat, Long> seatNo;
+    @FXML private TableColumn<Seat, Integer> seatNo;
     @FXML private TableColumn<Seat, String> clientName;
     @FXML private TableColumn<Trip, String> destination, date, time;
     @FXML private TableColumn<Trip, Integer> noSeats;
@@ -40,28 +42,22 @@ public class MainController implements Initializable, IObserver {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         logger.trace("Initializing main controller");
+        try {
+            seatNo.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().seatNo()));
+            clientName.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().clientName()));
 
-        // Initialize table columns
-        seatNo.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().seatNo()));
-        clientName.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().clientName()));
-        destination.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getDestination()));
-        date.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getDepartureDate().toString()));
-        time.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getDepartureTime().toString()));
-        noSeats.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getNoSeatsAvailable()));
-
-        // Set up selection listener for trip table
-        tripTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            if (newSelection != null) {
-                reloadReservationTable(newSelection);
-            }
-        });
+            destination.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getDestination()));
+            date.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getDepartureDate().toString()));
+            time.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getDepartureTime().toString()));
+            noSeats.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getNoSeatsAvailable()));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void setServices(IServices service) {
         logger.trace("Setting service for controller");
         this.service = service;
-        reloadTripTable();
-        service.addObserver(this);
     }
 
     public void setLoggedEmployee(Employee loggedEmployee) {
@@ -84,13 +80,14 @@ public class MainController implements Initializable, IObserver {
         }
 
         try {
-            List<Seat> seats = service.findAllReservedSeats(destination, date, time);
+            Seat[] seats = service.findAllReservedSeats(destination, date, time);
             Platform.runLater(() -> {
                 reservationTable.getItems().clear();
                 reservationTable.getItems().addAll(seats);
             });
         } catch (Exception e) {
             logger.error("Error finding trip", e);
+            e.printStackTrace();
             showAlert(Alert.AlertType.ERROR, "Error", e.getMessage());
         } finally {
             destinationField.clear();
@@ -118,8 +115,13 @@ public class MainController implements Initializable, IObserver {
         try {
             String clientName = clientField.getText();
             int seats = Integer.parseInt(noSeatsField.getText());
-            service.makeReservation(clientName, seats, selectedTrip.getId());
-            reservationMade();
+            System.out.println("before service make reserv");
+            service.makeReservation(clientName, seats, selectedTrip);
+            System.out.println("after service make reserv");
+//            Reservation reservation = new Reservation(-1L, clientName, seats, selectedTrip);
+//            System.out.println("before reload made");
+//            reservationMade(reservation);
+//            System.out.println("after reload made");
             showAlert(Alert.AlertType.INFORMATION, "Success", "Reservation made successfully");
             clientField.clear();
             noSeatsField.clear();
@@ -146,29 +148,41 @@ public class MainController implements Initializable, IObserver {
     }
 
     @Override
-    public void reservationMade() {
+    public void reservationMade(Reservation reservation) {
+        System.out.println(this);
         Platform.runLater(() -> {
             try {
-                reloadTripTable();
+                System.out.println("before trip");
                 Trip selected = tripTable.getSelectionModel().getSelectedItem();
+                System.out.println("before trip reload");
+                reloadTripTable();
+                System.out.println("after trip reload");
                 if (selected != null) {
                     reloadReservationTable(selected);
                 }
+                System.out.println("after reservation reload");
             } catch (Exception e) {
+                e.printStackTrace();
                 showAlert(Alert.AlertType.ERROR, "ERROR", "Failed to refresh data");
             }
         });
     }
 
-    private void reloadTripTable() {
+    public void reloadTripTable() {
         executor.execute(() -> {
             try {
-                List<Trip> trips = service.getAllTrips();
+                Trip[] trips = service.getAllTrips();
                 Platform.runLater(() -> {
-                    tripTable.getItems().setAll(trips);
+                    try {
+                        tripTable.getItems().setAll(Arrays.asList(trips));
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 });
             } catch (Exception e) {
-                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR,"Error", "Failed to load trips"));
+                e.printStackTrace();
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR,"Error", e.getMessage()));
             }
         });
     }
@@ -176,7 +190,7 @@ public class MainController implements Initializable, IObserver {
     private void reloadReservationTable(Trip trip) {
         executor.execute(() -> {
             try {
-                List<Seat> seats = service.findAllReservedSeats(
+                Seat[] seats = service.findAllReservedSeats(
                         trip.getDestination(),
                         trip.getDepartureDate().toString(),
                         trip.getDepartureTime().toString()

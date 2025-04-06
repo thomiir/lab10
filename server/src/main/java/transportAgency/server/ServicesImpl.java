@@ -17,7 +17,12 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ServicesImpl implements IServices {
     private static final Logger logger = LogManager.getLogger();
@@ -25,7 +30,7 @@ public class ServicesImpl implements IServices {
     private final IEmployeeRepository employeeRepository;
     private final ITripRepository tripRepository;
     private final IReservationRepository reservationRepository;
-    private final List<IObserver> observers = new CopyOnWriteArrayList<>();
+    private Map<Long, IObserver> loggedClients = new ConcurrentHashMap<>();
 
     public ServicesImpl(IEmployeeRepository employeeRepository,
                         ITripRepository tripRepository,
@@ -44,19 +49,19 @@ public class ServicesImpl implements IServices {
             logger.warn("Login failed for user: {}", username);
             return false;
         }
-        addObserver(client);
+        loggedClients.put(employee.getId(), client);
         logger.info("User {} logged in successfully", username);
         return true;
     }
 
     @Override
-    public Employee getEmployee(String username, String password) {
+    public synchronized Employee getEmployee(String username, String password) {
         logger.trace("Retrieving employee: {}", username);
         return employeeRepository.findByUsernameAndPassword(username, password);
     }
 
     @Override
-    public List<Seat> findAllReservedSeats(String destination, String date, String time) {
+    public synchronized Seat[] findAllReservedSeats(String destination, String date, String time) {
         logger.traceEntry("Finding reserved seats for trip: {} on {} at {}", destination, date, time);
         try {
             Date d = Date.valueOf(date);
@@ -65,23 +70,23 @@ public class ServicesImpl implements IServices {
 
             if (trip == null) {
                 logger.warn("No trip found for destination: {} on {} at {}", destination, date, time);
-                return new ArrayList<>();
+                return new Seat[0];
             }
 
-            List<Seat> seats = new ArrayList<>();
+            Seat[] seats = new Seat[18];
             List<Reservation> reservations = reservationRepository.findAllReservationsForTrip(trip);
-            long seatNumber = 1L;
+            int seatNumber = 0;
 
-            // Add reserved seats
             for (Reservation reservation : reservations) {
-                for (int i = 0; i < reservation.getNoSeats(); i++) {
-                    seats.add(new Seat(seatNumber++, reservation.getClientName()));
+                for (int i = 1; i <= reservation.getNoSeats(); i++) {
+                    seats[seatNumber] = new Seat(seatNumber, reservation.getClientName());
+                    seatNumber++;
                 }
             }
 
-            // Add available seats
-            while (seatNumber <= 18) {
-                seats.add(new Seat(seatNumber++, "-"));
+            while (seatNumber <= 17) {
+                seats[seatNumber] = new Seat(seatNumber, "-");
+                seatNumber++;
             }
 
             logger.traceExit();
@@ -95,36 +100,33 @@ public class ServicesImpl implements IServices {
     @Override
     public synchronized void logout(Employee employee, IObserver client) {
         logger.trace("Logging out user: {}", employee.getUsername());
-        removeObserver(client);
         logger.info("User {} logged out successfully", employee.getUsername());
     }
 
     @Override
-    public void makeReservation(String clientName, Integer noSeats, Long tripId) throws Exception {
-        Trip trip = tripRepository.findOne(tripId);
-        if (trip == null) throw new Exception("Trip not found");
-
+    public synchronized void makeReservation(String clientName, Integer noSeats, Trip trip) throws Exception {
+        if (trip == null)
+            throw new Exception("Trip not found");
         if (noSeats > trip.getNoSeatsAvailable()) {
             throw new Exception("Not enough seats available");
         }
-
         Reservation reservation = new Reservation(null, clientName, noSeats, trip);
         reservationRepository.save(reservation);
-
-        Trip updatedTrip = new Trip(tripId, trip.getDestination(),
+        Trip updatedTrip = new Trip(trip.getId(), trip.getDestination(),
                 trip.getDepartureDate(), trip.getDepartureTime(),
                 trip.getNoSeatsAvailable() - noSeats);
-        tripRepository.update(tripId, updatedTrip);
-
-        notifyObservers();
+        tripRepository.update(trip.getId(), updatedTrip);
     }
 
 
     @Override
-    public List<Trip> getAllTrips() {
+    public synchronized Trip[] getAllTrips() {
         logger.trace("Retrieving all trips");
         try {
-            return (List<Trip>) tripRepository.findAll();
+            Iterable<Trip> tripIterable = tripRepository.findAll();
+            List<Trip> tripList = new ArrayList<>();
+            tripIterable.forEach(tripList::add);
+            return tripList.toArray(new Trip[0]);
         } catch (Exception e) {
             logger.error("Error retrieving trips", e);
             throw new RuntimeException("Error retrieving trips", e);
@@ -132,7 +134,7 @@ public class ServicesImpl implements IServices {
     }
 
     @Override
-    public long getId(String username, String password) throws Exception {
+    public synchronized long getId(String username, String password) throws Exception {
         Employee employee = getEmployee(username, password);
         if (employee != null) {
             return employee.getId();
@@ -141,7 +143,7 @@ public class ServicesImpl implements IServices {
     }
 
     @Override
-    public Trip findTrip(String destination, Date departureDate, Time departureTime) throws Exception {
+    public synchronized Trip findTrip(String destination, Date departureDate, Time departureTime) throws Exception {
         try {
             return tripRepository.findTripByDestinationDateTime(destination, departureDate, departureTime);
         } catch (Exception e) {
@@ -150,21 +152,11 @@ public class ServicesImpl implements IServices {
     }
 
     @Override
-    public Trip findTripById(Long id) {
+    public synchronized Trip findTripById(Long id) {
         return tripRepository.findOne(id);
     }
 
-    @Override
-    public synchronized void addObserver(IObserver observer) {
-    }
 
-    @Override
-    public synchronized void removeObserver(IObserver observer) {
-    }
-
-    public void notifyObservers() {
-
-    }
 
     public boolean tripExists(String destination, String date, String time) {
         try {

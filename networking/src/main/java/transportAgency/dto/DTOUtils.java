@@ -36,29 +36,46 @@ public class DTOUtils {
     public static ReservationDTO getDTO(Reservation reservation){
         String clientName = reservation.getClientName();
         Integer noSeats = reservation.getNoSeats();
-        Trip trip = reservation.getTrip();
+        TripDTO trip = getDTO(reservation.getTrip());
         return new ReservationDTO(clientName, noSeats, trip);
     }
 
     public static Reservation getFromDTO(ReservationDTO reservationDTO) {
-        String clientName = reservationDTO.getClientName();
-        Integer noSeats = reservationDTO.getNoSeats();
-        Trip trip = reservationDTO.getTrip();
+        String clientName = reservationDTO.clientName();
+        Integer noSeats = reservationDTO.noSeats();
+        Trip trip = getFromDTO(reservationDTO.trip());
         return new Reservation(-1L, clientName, noSeats, trip);
     }
 
-    public static EmployeeDTO[] getDTO(Employee[] agenties){
-        EmployeeDTO[] frDTO=new EmployeeDTO[agenties.length];
-        for(int i=0;i<agenties.length;i++)
-            frDTO[i]=getDTO(agenties[i]);
-        return frDTO;
+    public static Trip[] getFromDTO(TripDTO[] tripDTOs) {
+        Trip[] trips = new Trip[tripDTOs.length];
+        for (int i = 0; i < tripDTOs.length; i++) {
+            trips[i] = getFromDTO(tripDTOs[i]);
+        }
+        return trips;
     }
 
-    public static Employee[] getFromDTO(EmployeeDTO[] agentieDTOS){
-        Employee[] friends=new Employee[agentieDTOS.length];
-        for(int i=0;i<agentieDTOS.length;i++){
-            friends[i]=getFromDTO(agentieDTOS[i]);
+    public static Seat[] getFromDTO(SeatDTO[] seatDTOs) {
+        Seat[] seats = new Seat[seatDTOs.length];
+        for (int i = 0; i < 18; i++) {
+            seats[i] = new Seat(seatDTOs[i].seatNo(), seatDTOs[i].clientName());
         }
-        return friends;
+        return seats;
+    }
+
+    public static SeatDTO[] getDTO(Seat[] seats) {
+        SeatDTO[] seatDTOs = new SeatDTO[seats.length];
+        for (int i = 0; i < 18; i++) {
+            seatDTOs[i] = new SeatDTO(seats[i].seatNo(), seats[i].clientName());
+        }
+        return seatDTOs;
+    }
+
+    public static TripDTO[] getDTO(Trip[] trips) {
+        TripDTO[] tripDTOs = new TripDTO[trips.length];
+        for (int i = 0; i < trips.length; i++) {
+            tripDTOs[i] = getDTO(trips[i]);
+        }
+        return tripDTOs;
     }
 }

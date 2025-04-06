@@ -1,32 +1,26 @@
 package transportAgency.server;
 
-import transportAgency.model.Employee;
 import transportAgency.persistence.IEmployeeRepository;
 import transportAgency.persistence.IReservationRepository;
 import transportAgency.persistence.ITripRepository;
 import transportAgency.persistence.jdbc.EmployeeRepository;
 import transportAgency.persistence.jdbc.ReservationRepository;
 import transportAgency.persistence.jdbc.TripRepository;
-import transportAgency.proto.RPCConcurrentServerProto;
 import transportAgency.services.IServices;
+import transportAgency.utils.AbstractServer;
+import transportAgency.utils.ChatObjectConcurrentServer;
 
 import java.io.IOException;
 import java.util.Properties;
 
-public class RpcServer {
+public class Server {
     private static int defaultPort=55555;
 
-
-    private static void setUp() {
-//        final StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
-//                .configure()
-//                .build();
-    }
 
     public static void main(String[] args) {
         Properties serverProps=new Properties();
         try {
-            serverProps.load(RpcServer.class.getResourceAsStream("/chatserver.properties"));
+            serverProps.load(Server.class.getResourceAsStream("/chatserver.properties"));
             System.out.println("Server properties set. ");
             serverProps.list(System.out);
         } catch (IOException e) {
@@ -34,12 +28,10 @@ public class RpcServer {
             return;
         }
 
-        setUp();
-
-        IEmployeeRepository agentieRepo=new EmployeeRepository(serverProps);
+        IEmployeeRepository emplRepo=new EmployeeRepository(serverProps);
         ITripRepository tripRepo=new TripRepository(serverProps);
-        IReservationRepository rezervareRepo = new ReservationRepository(serverProps, tripRepo);
-        IServices serverImpl=new ServicesImpl(agentieRepo, tripRepo, rezervareRepo);
+        IReservationRepository reservationRepo = new ReservationRepository(serverProps, tripRepo);
+        IServices serverImpl=new ServicesImpl(emplRepo, tripRepo, reservationRepo);
         int ServerPort=defaultPort;
         try {
             ServerPort = Integer.parseInt(serverProps.getProperty("chat.server.port"));
@@ -48,13 +40,13 @@ public class RpcServer {
             System.err.println("Using default port "+defaultPort);
         }
         System.out.println("Starting server on port: "+55555);
-        System.out.println(agentieRepo.findAll());
 
-        RPCConcurrentServerProto server = new RPCConcurrentServerProto("127.0.0.1",55555, serverImpl);
+        AbstractServer server = new ChatObjectConcurrentServer(ServerPort,serverImpl);
         try {
             server.start();
-        } finally {
-//            tearDown();
+        } catch (Exception e) {
+            System.err.println("Error starting server "+e);
+            System.err.println(e.getStackTrace());
         }
     }
 }

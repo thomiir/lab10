@@ -12,17 +12,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import transportAgency.services.IServices;
 
-import java.io.IOException;
-
 public class LoginController {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private MainController mainController;
-
     private IServices service;
-
-    private Parent parent;
 
     @FXML
     private TextField username;
@@ -39,35 +33,15 @@ public class LoginController {
     private void loginButtonClicked() {
         logger.traceEntry("Login button clicked");
         try {
-            if (!service.login(username.getText(), password.getText(), mainController)) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setHeaderText(null);
-                alert.setContentText("Invalid username or password");
-                alert.showAndWait();
-                username.clear();
-                password.clear();
-                logger.error("Login failed");
-                return;
-            }
-        } catch (Exception e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText(null);
-            alert.setContentText("Invalid username or password");
-            alert.showAndWait();
-            username.clear();
-            password.clear();
-            logger.error("Login failed");
-            return;
-        }
-
-        try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/views/main-view.fxml"));
             Parent root = fxmlLoader.load();
             MainController controller = fxmlLoader.getController();
+            System.out.println(controller);
             controller.setServices(service);
             controller.setLoggedEmployee(service.getEmployee(username.getText(), password.getText()));
+//            Thread.sleep(5000);
+            if (!service.login(username.getText(), password.getText(), controller)) return;
+            controller.reloadTripTable();
             Stage stage = new Stage();
             stage.setScene(new Scene(root));
             stage.setTitle("Main");
@@ -83,15 +57,8 @@ public class LoginController {
             logger.trace("Login successful");
 
         } catch (Exception e) {
+            e.printStackTrace();
             logger.error(e);
         }
-    }
-
-    public void setMainController(MainController mainController) {
-        this.mainController = mainController;
-    }
-
-    public void setParent(Parent parent) {
-        this.parent = parent;
     }
 }

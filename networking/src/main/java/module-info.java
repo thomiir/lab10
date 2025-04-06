@@ -1,7 +1,7 @@
 module transportAgency.networking {
-    exports transportAgency.proto;
-    exports transportAgency.rpcprotocol;
     exports transportAgency.dto;
+    exports transportAgency.utils;
+    exports transportAgency.objectprotocol;
     requires java.sql;
     requires transportAgency.model;
     requires transportAgency.services;

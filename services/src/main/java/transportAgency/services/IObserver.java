@@ -1,5 +1,7 @@
 package transportAgency.services;
 
+import transportAgency.model.Reservation;
+
 public interface IObserver {
-    void reservationMade() throws Exception;
+    void reservationMade(Reservation reservation) throws Exception;
 }
