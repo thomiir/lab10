@@ -1,5 +1,7 @@
 package transportAgency.objectprotocol;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import transportAgency.dto.*;
 import transportAgency.model.Employee;
 import transportAgency.model.Reservation;
@@ -11,7 +13,6 @@ import transportAgency.services.IServices;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.Date;
 import java.sql.Time;
@@ -21,15 +22,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class ServicesProxy implements IServices {
     private String host;
     private int port;
-
     private IObserver client;
-
     private ObjectInputStream input;
     private ObjectOutputStream output;
     private Socket connection;
-
-//    private static Logger logger = LogManager.getLogger(ServicesProxy.class);
-
+    private static Logger logger = LogManager.getLogger(ServicesProxy.class);
     private BlockingQueue<Response> qresponses;
     private volatile boolean finished;
 
@@ -40,58 +37,59 @@ public class ServicesProxy implements IServices {
     }
 
     private void initializeConnection() {
+        if (connection != null && connection.isConnected()) return;
         try {
-            connection = new Socket();
-            connection.connect(new InetSocketAddress(host, port), 5000);
+            connection = new Socket(host, port);
             output = new ObjectOutputStream(connection.getOutputStream());
             output.flush();
             input = new ObjectInputStream(connection.getInputStream());
             finished = false;
             startReader();
         } catch (IOException e) {
-            e.printStackTrace();
-//            logger.error(e);
-//            logger.error(e.getStackTrace());
+            logger.error(e);
+            logger.error(e.getStackTrace());
         }
     }
 
     private void closeConnection() {
         finished = true;
-        System.out.println("connection closed");
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            logger.error(e);
+            throw new RuntimeException(e);
+        }
         try {
             input.close();
             output.close();
             connection.close();
             client = null;
         } catch (IOException e) {
-            e.printStackTrace();
-//            logger.error(e);
-//            logger.error(e.getStackTrace());
+            logger.error(e);
+            logger.error(e.getStackTrace());
         }
     }
 
     private void sendRequest(Request request) throws Exception {
         try {
-            output.writeObject(request);
-            output.flush();
+            synchronized (output) {
+                output.writeObject(request);
+                output.flush();
+                output.reset();
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e);
             throw new Exception("Error sending object " + e);
         }
     }
 
     private Response readResponse() {
-        System.out.println("in readREsponse");
         Response response = null;
         try{
-            System.out.println("before take");
-            System.out.println(qresponses.size());
             response = qresponses.take();
-            System.out.println("after take");
         } catch (Exception e) {
-            e.printStackTrace();
-//            logger.error(e);
-//            logger.error(e.getStackTrace());
+            logger.error(e);
+            logger.error(e.getStackTrace());
         }
         return response;
     }
@@ -102,39 +100,43 @@ public class ServicesProxy implements IServices {
             tw.start();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         }
     }
 
     @Override
-    public Boolean login(String username, String password, IObserver client) throws Exception {
+    public void login(String username, String password, IObserver client) throws Exception {
         initializeConnection();
         EmployeeDTO employeeDTO = new EmployeeDTO(username, password);
         sendRequest(new LoginRequest(employeeDTO));
         Response response = readResponse();
-        if (response instanceof OkResponse) {
+        if (response instanceof OkResponse)
             this.client = client;
-            return true;
-        } else if (response instanceof ErrorResponse) {
+        else if (response instanceof ErrorResponse) {
+            logger.error(((ErrorResponse) response).getMessage());
+            throw new Exception(((ErrorResponse) response).getMessage());
+        }
+    }
+
+    @Override
+    public void logout(Employee employee, IObserver client) {
+        try {
+            EmployeeDTO employeeDTO = DTOUtils.getDTO(employee);
+            sendRequest(new LogoutRequest(employeeDTO));
+            Response response = readResponse();
+            if (response instanceof ErrorResponse)
+            {
+                logger.error(((ErrorResponse) response).getMessage());
+                throw new Exception(((ErrorResponse) response).getMessage());
+            }
             closeConnection();
-            throw new Exception(((ErrorResponse) response).getMessage());
-        }
-        return false;
-    }
-
-    @Override
-    public void logout(Employee employee, IObserver client) throws Exception {
-        EmployeeDTO employeeDTO = DTOUtils.getDTO(employee);
-        sendRequest(new LogoutRequest(employeeDTO));
-        Response response = readResponse();
-        closeConnection();
-        if (response instanceof ErrorResponse) {
-            throw new Exception(((ErrorResponse) response).getMessage());
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 
     @Override
-    public Employee getEmployee(String username, String password) throws Exception {
+    public Employee getEmployee(String username, String password) {
         return DTOUtils.getFromDTO(new EmployeeDTO(username, password));
     }
 
@@ -144,6 +146,7 @@ public class ServicesProxy implements IServices {
         sendRequest(new FindSeatsRequest(tripDTO));
         Response response = readResponse();
         if (response instanceof ErrorResponse) {
+            logger.error(((ErrorResponse) response).getMessage());
             throw new Exception(((ErrorResponse) response).getMessage());
         }
         FindSeatsResponse findReservedSeatsResponse = (FindSeatsResponse) response;
@@ -152,67 +155,32 @@ public class ServicesProxy implements IServices {
     }
 
     @Override
-    public void makeReservation(String clientName, Integer noSeats, Trip trip) throws Exception {
-        System.out.println("Making reservation - client: " + clientName + ", seats: " + noSeats);
+    public void makeReservation(String clientName, Integer noSeats, Trip trip) {
         try {
             TripDTO tripDTO = DTOUtils.getDTO(trip);
             ReservationDTO reservationDTO = new ReservationDTO(clientName, noSeats, tripDTO);
-
-            System.out.println("Sending reservation request");
             sendRequest(new MakeReservationRequest(reservationDTO));
-
-            System.out.println("Waiting for reservation response");
-            UpdateResponse response = (UpdateResponse) readResponse();
-            System.out.println(response == null);
-            if (response == null) {
-                throw new Exception("No response received for reservation request");
-            }
-
-            System.out.println("Received response: " + response.getClass().getSimpleName());
+            Response response = readResponse();
             if (response instanceof ErrorResponse) {
+                logger.error(((ErrorResponse) response).getMessage());
                 throw new Exception(((ErrorResponse) response).getMessage());
             }
-
-            if (response instanceof MakeReservationResponse) {
-                MakeReservationResponse makeReservationResponse = (MakeReservationResponse) response;
-                Reservation reservation = DTOUtils.getFromDTO(makeReservationResponse.reservationDTO());
-                client.reservationMade(reservation);
-                System.out.println("Reservation confirmed");
-            } else {
-                System.err.println("Unexpected response type: " + response.getClass().getSimpleName());
-            }
         } catch (Exception e) {
-            System.err.println("Error making reservation: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+            logger.error(e);
         }
-        System.out.println("makeReservation completed");
     }
+
     @Override
     public Trip[] getAllTrips() throws Exception {
         sendRequest(new FindTripsRequest());
         Response response = readResponse();
         if (response instanceof ErrorResponse) {
+            logger.error(((ErrorResponse) response).getMessage());
             throw new Exception(((ErrorResponse) response).getMessage());
         }
-        FindTripsResponse findTripsResponse = (FindTripsResponse) response;;
+        FindTripsResponse findTripsResponse = (FindTripsResponse) response;
         TripDTO[] tripDTOs = findTripsResponse.trips();
         return DTOUtils.getFromDTO(tripDTOs);
-    }
-
-    @Override
-    public long getId(String username, String password) throws Exception {
-        return 0;
-    }
-
-    @Override
-    public Trip findTrip(String destination, Date departureDate, Time departureTime) throws Exception {
-        return null;
-    }
-
-    @Override
-    public Trip findTripById(Long id) throws Exception {
-        return null;
     }
 
     private class ReaderThread implements Runnable{
@@ -220,47 +188,34 @@ public class ServicesProxy implements IServices {
             while(!finished){
                 try {
                     Object response=input.readObject();
-//                    logger.debug("response received {}",response);
-                    System.out.println(response instanceof UpdateResponse);
                     if (response instanceof UpdateResponse){
-//                        handleUpdate((UpdateResponse)response);
-                        System.out.println("exit handle update");
-                        qresponses.put((UpdateResponse)response);
-                    }else{
+                        handleUpdate((UpdateResponse)response);
+                    }else if (response instanceof Response){
                         try {
                             qresponses.put((Response)response);
                         } catch (Exception e) {
-                            e.printStackTrace();
-//                            logger.error(e);
-//                            logger.error(e.getStackTrace());
+                            logger.error(e);
+                            logger.error(e.getStackTrace());
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
-//                    logger.error("Reading error "+e);
+                    logger.error("Reading error {}", String.valueOf(e));
                 }
             }
         }
     }
 
     private void handleUpdate(UpdateResponse response) {
-        System.out.println("entered handle update");
         if (response instanceof MakeReservationResponse) {
-            System.out.println("entered if");
-            MakeReservationResponse makeReservationResponse = (MakeReservationResponse) response;
-            System.out.println("casted response");
-            Reservation reservation = DTOUtils.getFromDTO(makeReservationResponse.reservationDTO());
-            System.out.println(reservation);
             try {
-                System.out.println("enterd try");
-                System.out.println(client);
-                client.reservationMade(reservation);
-                System.out.println("exit try");
-                //                logger.debug("reservation made {}", makeReservationResponse);
+                MakeReservationResponse makeReservationResponse = (MakeReservationResponse) response;
+                ReservationDTO reservationDTO = makeReservationResponse.rdto();
+                Reservation reservation = DTOUtils.getFromDTO(reservationDTO);
+                synchronized (client) {
+                    client.reservationMade(reservation);
+                }
             } catch (Exception e) {
-                e.printStackTrace();
-//                logger.error(e);
-//                logger.error(e.getStackTrace());
+                logger.error(e);
             }
         }
     }

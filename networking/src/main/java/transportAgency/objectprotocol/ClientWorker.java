@@ -1,5 +1,7 @@
 package transportAgency.objectprotocol;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import transportAgency.dto.*;
 import transportAgency.model.Employee;
 import transportAgency.model.Reservation;
@@ -22,7 +24,7 @@ public class ClientWorker implements Runnable, IObserver {
     private ObjectOutputStream output;
     private volatile boolean connected;
 
-//    private static Logger logger = LogManager.getLogger(ClientWorker.class);
+    private static Logger logger = LogManager.getLogger(ClientWorker.class);
 
     public ClientWorker(IServices server, Socket connection) {
         this.server = server;
@@ -33,9 +35,8 @@ public class ClientWorker implements Runnable, IObserver {
             input = new ObjectInputStream(connection.getInputStream());
             connected = true;
         } catch (IOException e) {
-            e.printStackTrace();
-//             logger.error(e);
-//             logger.error(e.getStackTrace());
+             logger.error(e);
+             logger.error(e.getStackTrace());
         }
     }
 
@@ -50,37 +51,32 @@ public class ClientWorker implements Runnable, IObserver {
                 }
             } catch (IOException e) {
                 connected = false;
-                e.printStackTrace();
-//                logger.error(e);
-//                logger.error(e.getStackTrace());
+                logger.error(e);
+                logger.error(e.getStackTrace());
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                logger.error(e);
+                logger.error(e.getStackTrace());
             }
-
-//            try {
-//                Thread.sleep(1000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-////                logger.error(e);
-////                logger.error(e.getStackTrace());
-//            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                logger.error(e);
+                logger.error(e.getStackTrace());
+            }
         }
         try {
             input.close();
             output.close();
             connection.close();
         } catch (IOException e) {
-            e.printStackTrace();
-//            logger.error("Error "+e);
+            logger.error(e);
+            logger.error(e.getStackTrace());
         }
-
     }
 
     private Response handleRequest(Request request) {
-        Response response = null;
-
         if (request instanceof LoginRequest) {
-//            logger.debug("Login request...");
+            logger.debug("Login request...");
             LoginRequest loginRequest = (LoginRequest) request;
             EmployeeDTO employeeDTO = loginRequest.employee();
             Employee employee = DTOUtils.getFromDTO(employeeDTO);
@@ -94,44 +90,42 @@ public class ClientWorker implements Runnable, IObserver {
         }
 
         if (request instanceof LogoutRequest) {
-            // logger.debug("Logout request...");
+             logger.debug("Logout request...");
             LogoutRequest logoutRequest = (LogoutRequest) request;
             EmployeeDTO employeeDTO = logoutRequest.getEmployee();
             Employee employee = DTOUtils.getFromDTO(employeeDTO);
             try {
                 server.logout(employee, this);
-                connected = false;
+                connected = false; ///?
                 return new OkResponse();
             } catch (java.lang.Exception e) {
-                e.printStackTrace();
+                logger.error(e);
                 return new ErrorResponse(e.getMessage());
             }
         }
 
         if (request instanceof MakeReservationRequest) {
             try {
-                // logger.debug("MakeReservationRequest...");
+                 logger.debug("MakeReservationRequest...");
                 MakeReservationRequest makeReservationRequest = (MakeReservationRequest) request;
                 ReservationDTO reservationDTO = makeReservationRequest.reservation();
                 Reservation reservation = DTOUtils.getFromDTO(reservationDTO);
                 try {
-                    System.out.println("worker before make reservation");
                     server.makeReservation(reservation.getClientName(), reservation.getNoSeats(), reservation.getTrip());
-                    System.out.println("worker after make reservation");
-                    return new MakeReservationResponse(reservationDTO);
+                    return new OkResponse();
                 } catch (java.lang.Exception e) {
                     e.printStackTrace();
                     return new ErrorResponse(e.getMessage());
                 }
             }
             catch (java.lang.Exception e) {
-                e.printStackTrace();
+                logger.error(e);
                 return new ErrorResponse(e.getMessage());
             }
         }
 
         if (request instanceof FindSeatsRequest) {
-            // logger.debug("FindSeatsRequest...");
+             logger.debug("FindSeatsRequest...");
             try {
                 FindSeatsRequest findSeatsRequest = (FindSeatsRequest) request;
                 TripDTO tripDTO = findSeatsRequest.trip();
@@ -140,50 +134,47 @@ public class ClientWorker implements Runnable, IObserver {
                 SeatDTO[] seatDTOs = DTOUtils.getDTO(seats);
                 return new FindSeatsResponse(seatDTOs);
             } catch (java.lang.Exception e) {
-                e.printStackTrace();
+                logger.error(e);
                 return new ErrorResponse(e.getMessage());
             }
         }
 
         if (request instanceof FindTripsRequest) {
-            // logger.debug("FindTripsRequest...");
+             logger.debug("FindTripsRequest...");
             try {
                 Trip[] trips = server.getAllTrips();
                 TripDTO[] tripDTOs = DTOUtils.getDTO(trips);
                 return new FindTripsResponse(tripDTOs);
             } catch (java.lang.Exception e) {
-                e.printStackTrace();
+                logger.error(e);
                 return new ErrorResponse(e.getMessage());
             }
         }
-
-        return response;
+        return null;
     }
 
     private void sendResponse(Response response) throws IOException {
-//        logger.debug("sending response {}", response);
+        logger.debug("sending response {}", response);
         synchronized (output) {
             try {
-                System.out.println("response sending");
                 output.writeObject(response);
                 output.flush();
-                System.out.println("response sent");
+                output.reset();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         }
     }
 
     @Override
-    public void reservationMade(Reservation reservation) throws Exception {
+    public void reservationMade(Reservation reservation) {
+        logger.debug("reservation made {}", reservation);
         ReservationDTO reservationDTO = DTOUtils.getDTO(reservation);
-//        logger.debug("reservation made {}", reservationDTO);
         try {
             sendResponse(new MakeReservationResponse(reservationDTO));
         } catch (IOException e) {
-            e.printStackTrace();
-//            logger.error(e);
-//            logger.error(e.getStackTrace());
+            logger.error(e);
+            throw new RuntimeException(e);
         }
     }
 }

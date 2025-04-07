@@ -26,6 +26,7 @@ public class EmployeeRepository implements IEmployeeRepository {
 
     @Override
     public Employee findByUsernameAndPassword(String username, String password) {
+        System.out.println("finding " + username + " " + password);
         Connection con = dbUtils.getConnection();
         try (PreparedStatement preStmt = con.prepareStatement("select * from employees where username=? and password=?")) {
             preStmt.setString(1, username);
@@ -34,14 +35,18 @@ public class EmployeeRepository implements IEmployeeRepository {
                 if (result.next())
                 {
                     logger.traceExit("Employee {} found", username);
+                    System.out.println("result:" + createEmployee(result));
                     return createEmployee(result);
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             logger.error(e);
         }
+        System.out.println("result: null");
         logger.traceExit();
         return null;
     }

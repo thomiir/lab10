@@ -2,24 +2,25 @@ package transportAgency.dto;
 
 import java.sql.Date;
 import java.sql.Time;
-import java.time.LocalTime;
 import transportAgency.model.*;
 
 public class DTOUtils {
     public static Employee getFromDTO(EmployeeDTO employeeDTO){
         String username = employeeDTO.getUsername();
-        return new Employee(-1L, username, "");
+        String password = employeeDTO.getPassword();
+        return new Employee(-1L, username, password);
     }
     public static EmployeeDTO getDTO(Employee employee){
         String username = employee.getUsername();
-        return new EmployeeDTO(username,"");
+        String password = employee.getPassword();
+        return new EmployeeDTO(username,password);
     }
 
     public static Trip getFromDTO(TripDTO tripDTO){
         Long id = tripDTO.getId();
         String destination = tripDTO.getDestination();
-        Date departureDate = tripDTO.getDepartureDate();
-        Time departureTime = tripDTO.getDepartureTime();
+        Date departureDate = tripDTO.getSqlDepartureDate();
+        Time departureTime = tripDTO.getSqlDepartureTime();
         Integer noSeatsAvailable = tripDTO.getNoSeatsAvailable();
         return new Trip(id, destination, departureDate, departureTime, noSeatsAvailable);
     }
@@ -56,19 +57,31 @@ public class DTOUtils {
     }
 
     public static Seat[] getFromDTO(SeatDTO[] seatDTOs) {
-        Seat[] seats = new Seat[seatDTOs.length];
-        for (int i = 0; i < 18; i++) {
-            seats[i] = new Seat(seatDTOs[i].seatNo(), seatDTOs[i].clientName());
+        try {
+            Seat[] seats = new Seat[18];
+            for (int i = 0; i < 18; i++) {
+                seats[i] = new Seat(seatDTOs[i].seatNo(), seatDTOs[i].clientName());
+            }
+            return seats;
         }
-        return seats;
+        catch (Exception e) {
+            System.out.println("Error: Array index out of bounds. Please check the input data.");
+            return new Seat[0]; // Return an empty array or handle the error as needed
+        }
     }
 
     public static SeatDTO[] getDTO(Seat[] seats) {
-        SeatDTO[] seatDTOs = new SeatDTO[seats.length];
-        for (int i = 0; i < 18; i++) {
-            seatDTOs[i] = new SeatDTO(seats[i].seatNo(), seats[i].clientName());
+        try {
+            SeatDTO[] seatDTOs = new SeatDTO[18];
+            for (int i = 0; i < 18; i++) {
+                seatDTOs[i] = new SeatDTO(seats[i].seatNo(), seats[i].clientName());
+            }
+            return seatDTOs;
         }
-        return seatDTOs;
+        catch (Exception e) {
+            System.out.println("Error: Array index out of bounds. Please check the input data.");
+            return new SeatDTO[0]; // Return an empty array or handle the error as needed
+        }
     }
 
     public static TripDTO[] getDTO(Trip[] trips) {

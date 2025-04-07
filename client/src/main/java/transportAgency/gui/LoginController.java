@@ -1,4 +1,4 @@
-package gui;
+package transportAgency.gui;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,6 +18,10 @@ public class LoginController {
 
     private IServices service;
 
+    private Parent parent;
+
+    private MainController mainController;
+
     @FXML
     private TextField username;
 
@@ -33,17 +37,12 @@ public class LoginController {
     private void loginButtonClicked() {
         logger.traceEntry("Login button clicked");
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/views/main-view.fxml"));
-            Parent root = fxmlLoader.load();
-            MainController controller = fxmlLoader.getController();
-            System.out.println(controller);
-            controller.setServices(service);
-            controller.setLoggedEmployee(service.getEmployee(username.getText(), password.getText()));
-//            Thread.sleep(5000);
-            if (!service.login(username.getText(), password.getText(), controller)) return;
-            controller.reloadTripTable();
+            mainController.setServices(service);
+            mainController.setLoggedEmployee(service.getEmployee(username.getText(), password.getText()));
+            service.login(username.getText(), password.getText(), mainController);
+            mainController.reloadTripTable();
             Stage stage = new Stage();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(parent));
             stage.setTitle("Main");
             stage.sizeToScene();
             stage.show();
@@ -57,8 +56,21 @@ public class LoginController {
             logger.trace("Login successful");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText(e.getMessage());
+            alert.showAndWait();
+            logger.error("Login failed: {}", e.getMessage());
             logger.error(e);
         }
+    }
+
+    public void setParent(Parent parent) {
+        this.parent = parent;
+    }
+
+    public void setMainController(MainController mainController) {
+        this.mainController = mainController;
     }
 }

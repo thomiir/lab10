@@ -1,3 +1,5 @@
 package transportAgency.model;
 
-public record Seat(Integer seatNo, String clientName) {}
+import java.io.Serializable;
+
+public record Seat(Integer seatNo, String clientName) implements Serializable {}

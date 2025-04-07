@@ -1,9 +1,11 @@
 package transportAgency.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.sql.Date;
 import java.sql.Time;
 
-public class Trip extends Entity<Long>{
+public class Trip extends Entity<Long> implements Serializable {
     private final String destination;
     private final Date departureDate;
     private final Time departureTime;

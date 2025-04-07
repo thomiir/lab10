@@ -13,16 +13,11 @@ import transportAgency.services.IObserver;
 import transportAgency.services.IServices;
 
 import java.sql.Date;
-import java.sql.SQLException;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class ServicesImpl implements IServices {
     private static final Logger logger = LogManager.getLogger();
@@ -42,16 +37,20 @@ public class ServicesImpl implements IServices {
     }
 
     @Override
-    public synchronized Boolean login(String username, String password, IObserver client) {
+    public synchronized void login(String username, String password, IObserver client) throws Exception {
         logger.trace("Attempting login for user: {}", username);
         Employee employee = employeeRepository.findByUsernameAndPassword(username, password);
         if (employee == null) {
             logger.warn("Login failed for user: {}", username);
-            return false;
+            throw new Exception("Login failed.");
+        }
+        if (loggedClients.containsKey(employee.getId())) {
+            logger.warn("User {} is already logged in", username);
+            throw new Exception("User already logged in.");
         }
         loggedClients.put(employee.getId(), client);
+        System.out.println("loggedclients size: " + loggedClients.size());
         logger.info("User {} logged in successfully", username);
-        return true;
     }
 
     @Override
@@ -73,7 +72,7 @@ public class ServicesImpl implements IServices {
                 return new Seat[0];
             }
 
-            Seat[] seats = new Seat[18];
+            Seat[] seats = new Seat[19];
             List<Reservation> reservations = reservationRepository.findAllReservationsForTrip(trip);
             int seatNumber = 0;
 
@@ -99,6 +98,7 @@ public class ServicesImpl implements IServices {
 
     @Override
     public synchronized void logout(Employee employee, IObserver client) {
+        loggedClients.remove(employee.getId());
         logger.trace("Logging out user: {}", employee.getUsername());
         logger.info("User {} logged out successfully", employee.getUsername());
     }
@@ -116,8 +116,15 @@ public class ServicesImpl implements IServices {
                 trip.getDepartureDate(), trip.getDepartureTime(),
                 trip.getNoSeatsAvailable() - noSeats);
         tripRepository.update(trip.getId(), updatedTrip);
+        for (IObserver client : loggedClients.values()) {
+            try {
+                client.reservationMade(reservation);
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error("Error notifying client about trip update", e);
+            }
+        }
     }
-
 
     @Override
     public synchronized Trip[] getAllTrips() {
@@ -130,44 +137,6 @@ public class ServicesImpl implements IServices {
         } catch (Exception e) {
             logger.error("Error retrieving trips", e);
             throw new RuntimeException("Error retrieving trips", e);
-        }
-    }
-
-    @Override
-    public synchronized long getId(String username, String password) throws Exception {
-        Employee employee = getEmployee(username, password);
-        if (employee != null) {
-            return employee.getId();
-        }
-        throw new Exception("Employee not found");
-    }
-
-    @Override
-    public synchronized Trip findTrip(String destination, Date departureDate, Time departureTime) throws Exception {
-        try {
-            return tripRepository.findTripByDestinationDateTime(destination, departureDate, departureTime);
-        } catch (Exception e) {
-            throw new Exception("Error finding trip", e);
-        }
-    }
-
-    @Override
-    public synchronized Trip findTripById(Long id) {
-        return tripRepository.findOne(id);
-    }
-
-
-
-    public boolean tripExists(String destination, String date, String time) {
-        try {
-            return tripRepository.findTripByDestinationDateTime(
-                    destination,
-                    Date.valueOf(date),
-                    Time.valueOf(time)
-            ) != null;
-        } catch (Exception e) {
-            logger.error("Error checking trip existence", e);
-            return false;
         }
     }
 }

@@ -1,10 +1,12 @@
 package transportAgency.dto;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 
 public class EmployeeDTO implements Serializable {
-
+    @Serial
+    private static final long serialVersionUID = 1L;
     private final String username;
     private final String password;
 

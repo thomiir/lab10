@@ -1,10 +1,12 @@
-import gui.LoginController;
-import gui.MainController;
+package transportAgency;
+
+import transportAgency.gui.LoginController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import transportAgency.gui.MainController;
 import transportAgency.objectprotocol.ServicesProxy;
 import transportAgency.services.IServices;
 import java.io.IOException;
@@ -39,13 +41,22 @@ public class StartClient extends Application {
         System.out.println("Using server IP " + serverIP);
         System.out.println("Using server port " + serverPort);
         IServices server = new ServicesProxy(serverIP, serverPort);
-        FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("views/login-view.fxml"));
-        Parent root=loader.load();
+
+        FXMLLoader loader = new FXMLLoader(StartClient.class.getResource("/views/login-view.fxml"));
+        Parent root = loader.load();
         LoginController ctrl = loader.getController();
         ctrl.setServices(server);
         primaryStage.setTitle("Login");
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
+
+        FXMLLoader cLoader = new FXMLLoader(StartClient.class.getResource("/views/main-view.fxml"));
+        Parent cRoot = cLoader.load();
+        MainController cCtrl = cLoader.getController();
+        cCtrl.setServices(server);
+        ctrl.setMainController(cCtrl);
+        ctrl.setParent(cRoot);
+
     }
 }
 

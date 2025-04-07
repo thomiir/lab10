@@ -1,4 +1,4 @@
-module gui {
+module transportAgency.gui {
     requires javafx.controls;
     requires javafx.graphics;
     requires transportAgency.networking;
@@ -7,5 +7,7 @@ module gui {
     requires transportAgency.model;
     requires javafx.fxml;
     requires java.sql;
-    exports gui;
+    exports transportAgency.gui;
+    opens transportAgency.gui to javafx.fxml;
+    exports transportAgency to javafx.graphics;
 }

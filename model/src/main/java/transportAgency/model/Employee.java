@@ -1,6 +1,8 @@
 package transportAgency.model;
 
-public class Employee extends Entity<Long>{
+import java.io.Serializable;
+
+public class Employee extends Entity<Long> implements Serializable {
     private final String username;
     private final String password;
 

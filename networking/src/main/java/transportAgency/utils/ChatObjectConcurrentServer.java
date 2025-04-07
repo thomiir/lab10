@@ -22,9 +22,7 @@ public class ChatObjectConcurrentServer extends AbsConcurrentServer {
 
     @Override
     protected Thread createWorker(Socket client) {
-        ClientWorker worker=new ClientWorker(chatServer, client);
-        Thread tw=new Thread(worker);
-        return tw;
+        return new Thread(new ClientWorker(chatServer, client));
     }
 }
 

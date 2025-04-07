@@ -2,4 +2,9 @@ package transportAgency.objectprotocol;
 
 import transportAgency.dto.EmployeeDTO;
 
-public record LoginRequest(EmployeeDTO employee) implements Request {}
+import java.io.Serial;
+
+public record LoginRequest(EmployeeDTO employee) implements Request {
+    @Serial
+    private static final long serialVersionUID = 10L;
+}

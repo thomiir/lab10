@@ -1,6 +1,8 @@
 package transportAgency.model;
 
-public class Reservation extends Entity<Long>{
+import java.io.Serializable;
+
+public class Reservation extends Entity<Long> implements Serializable {
     private final String clientName;
     private final Integer noSeats;
     private final Trip trip;

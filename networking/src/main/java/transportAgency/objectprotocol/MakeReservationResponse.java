@@ -2,4 +2,9 @@ package transportAgency.objectprotocol;
 
 import transportAgency.dto.ReservationDTO;
 
-public record MakeReservationResponse(ReservationDTO reservationDTO) implements UpdateResponse {}
+import java.io.Serial;
+
+public record MakeReservationResponse(ReservationDTO rdto) implements UpdateResponse {
+    @Serial
+    private static final long serialVersionUID = 13L;
+}
