@@ -7,6 +7,7 @@ import transportAgency.model.Employee;
 import transportAgency.model.Reservation;
 import transportAgency.model.Seat;
 import transportAgency.model.Trip;
+import transportAgency.protobufprotocol.AESEncryptor;
 import transportAgency.services.IObserver;
 import transportAgency.services.IServices;
 
@@ -107,7 +108,7 @@ public class ServicesProxy implements IServices {
     @Override
     public void login(String username, String password, IObserver client) throws Exception {
         initializeConnection();
-        EmployeeDTO employeeDTO = new EmployeeDTO(username, password);
+        EmployeeDTO employeeDTO = new EmployeeDTO(username, AESEncryptor.encrypt(password));
         sendRequest(new LoginRequest(employeeDTO));
         Response response = readResponse();
         if (response instanceof OkResponse)
@@ -141,8 +142,8 @@ public class ServicesProxy implements IServices {
     }
 
     @Override
-    public Seat[] findAllReservedSeats(String destination, String date, String time) throws Exception {
-        TripDTO tripDTO = new TripDTO(-1L, destination, Date.valueOf(date), Time.valueOf(time), 18);
+    public Seat[] findAllReservedSeats(String destination, Date date, Time time) throws Exception {
+        TripDTO tripDTO = new TripDTO(-1L, destination, date, time, 18);
         sendRequest(new FindSeatsRequest(tripDTO));
         Response response = readResponse();
         if (response instanceof ErrorResponse) {
@@ -181,6 +182,21 @@ public class ServicesProxy implements IServices {
         FindTripsResponse findTripsResponse = (FindTripsResponse) response;
         TripDTO[] tripDTOs = findTripsResponse.trips();
         return DTOUtils.getFromDTO(tripDTOs);
+    }
+
+    @Override
+    public void addEmployee(Long id, String username, String password) {
+        return;
+    }
+
+    @Override
+    public Employee getEmployeeByUsername(String username) {
+        return null;
+    }
+
+    @Override
+    public Trip findTripByDestinationDateTime(String destination, Date date, Time time) {
+        return null;
     }
 
     private class ReaderThread implements Runnable{

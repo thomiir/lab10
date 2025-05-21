@@ -80,7 +80,7 @@ public class DTOUtils {
         }
         catch (Exception e) {
             System.out.println("Error: Array index out of bounds. Please check the input data.");
-            return new SeatDTO[0]; // Return an empty array or handle the error as needed
+            return new SeatDTO[0];
         }
     }
 

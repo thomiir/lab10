@@ -3,7 +3,7 @@ package transportAgency.persistence.jdbc;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import transportAgency.model.Employee;
-import transportAgency.persistence.IEmployeeRepository;
+import transportAgency.persistence.interfaces.IEmployeeRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -47,6 +47,30 @@ public class EmployeeRepository implements IEmployeeRepository {
             logger.error(e);
         }
         System.out.println("result: null");
+        logger.traceExit();
+        return null;
+    }
+
+    @Override
+    public Employee findByUsername(String username) {
+        logger.traceEntry("finding employee {}", username);
+        Connection con = dbUtils.getConnection();
+        try (PreparedStatement preStmt = con.prepareStatement("select * from employees where username=?")) {
+            preStmt.setString(1, username);
+            try (ResultSet result = preStmt.executeQuery()) {
+                if (result.next())
+                {
+                    logger.traceExit("Employee {} found", username);
+                    return createEmployee(result);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error(e);
+        }
         logger.traceExit();
         return null;
     }
@@ -102,7 +126,7 @@ public class EmployeeRepository implements IEmployeeRepository {
     }
 
     @Override
-    public void save(Employee entity) {
+    public Employee save(Employee entity) {
         logger.traceEntry("Save employee {} ", entity);
         Connection con = dbUtils.getConnection();
         try (PreparedStatement preStmt = con.prepareStatement("insert into employees values (?,?,?)")) {
@@ -118,6 +142,7 @@ public class EmployeeRepository implements IEmployeeRepository {
             throw new RuntimeException(e);
         }
         logger.traceExit();
+        return entity;
     }
 
     @Override
@@ -135,7 +160,7 @@ public class EmployeeRepository implements IEmployeeRepository {
     }
 
     @Override
-    public void update(Long id, Employee entity) {
+    public Employee update(Long id, Employee entity) {
         logger.traceEntry("Update employee {} ", id);
         Connection con = dbUtils.getConnection();
         try (PreparedStatement preparedStatement = con.prepareStatement("update employees set username = ?, password = ? where id = ?")) {
@@ -144,6 +169,7 @@ public class EmployeeRepository implements IEmployeeRepository {
             preparedStatement.setLong(3, id);
             int result = preparedStatement.executeUpdate();
             logger.trace("Updated {} employees", result);
+            entity.setId(id);
         } catch (SQLException ex) {
             logger.error(ex);
         } catch (Exception e) {
@@ -151,5 +177,6 @@ public class EmployeeRepository implements IEmployeeRepository {
             throw new RuntimeException(e);
         }
         logger.traceExit();
+        return entity;
     }
 }

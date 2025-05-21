@@ -1,15 +1,18 @@
 package transportAgency.model;
 
-import java.io.Serial;
+import jakarta.persistence.Table;
+
 import java.io.Serializable;
 import java.sql.Date;
 import java.sql.Time;
 
-public class Trip extends Entity<Long> implements Serializable {
-    private final String destination;
-    private final Date departureDate;
-    private final Time departureTime;
-    private final Integer noSeatsAvailable;
+@jakarta.persistence.Entity
+@Table(name="trips")
+public class Trip extends Entity<Long> {
+    private String destination;
+    private Date departureDate;
+    private Time departureTime;
+    private Integer noSeatsAvailable;
 
     public Trip(Long id, String destination, Date departureDate, Time departureTime, Integer noSeatsAvailable) {
         setId(id);
@@ -17,6 +20,17 @@ public class Trip extends Entity<Long> implements Serializable {
         this.departureDate = departureDate;
         this.departureTime = departureTime;
         this.noSeatsAvailable = noSeatsAvailable;
+    }
+
+    public Trip(String destination, Date departureDate, Time departureTime, Integer noSeatsAvailable) {
+        this.destination = destination;
+        this.departureDate = departureDate;
+        this.departureTime = departureTime;
+        this.noSeatsAvailable = noSeatsAvailable;
+    }
+
+    public Trip() {
+
     }
 
     public String getDestination() {

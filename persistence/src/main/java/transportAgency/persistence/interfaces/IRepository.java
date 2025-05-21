@@ -1,4 +1,4 @@
-package transportAgency.persistence;
+package transportAgency.persistence.interfaces;
 
 
 import transportAgency.model.Entity;
@@ -8,9 +8,9 @@ public interface IRepository<ID, E extends Entity<ID>> {
 
     Iterable<E> findAll();
 
-    void save(E entity);
+    E save(E entity);
 
     void delete(ID id);
 
-    void update(ID id, E entity);
+    E update(ID id, E entity);
 }

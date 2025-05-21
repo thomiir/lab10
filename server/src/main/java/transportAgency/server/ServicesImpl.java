@@ -6,15 +6,16 @@ import transportAgency.model.Employee;
 import transportAgency.model.Reservation;
 import transportAgency.model.Seat;
 import transportAgency.model.Trip;
-import transportAgency.persistence.IEmployeeRepository;
-import transportAgency.persistence.ITripRepository;
-import transportAgency.persistence.IReservationRepository;
+import transportAgency.persistence.interfaces.IEmployeeRepository;
+import transportAgency.persistence.interfaces.ITripRepository;
+import transportAgency.persistence.interfaces.IReservationRepository;
 import transportAgency.services.IObserver;
 import transportAgency.services.IServices;
 
 import java.sql.Date;
 import java.sql.Time;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,20 @@ public class ServicesImpl implements IServices {
         this.employeeRepository = employeeRepository;
         this.tripRepository = tripRepository;
         this.reservationRepository = reservationRepository;
+    }
+
+    public void addEmployee(Long id, String username, String password) {
+//        employeeRepository.save(new Employee(id, username, new BCryptPasswordEncoder().encode(password)));
+    }
+
+    @Override
+    public Employee getEmployeeByUsername(String username) {
+        return employeeRepository.findByUsername(username);
+    }
+
+    @Override
+    public Trip findTripByDestinationDateTime(String destination, Date date, Time time) {
+        return tripRepository.findTripByDestinationDateTime(destination, date, time);
     }
 
     @Override
@@ -60,19 +75,16 @@ public class ServicesImpl implements IServices {
     }
 
     @Override
-    public synchronized Seat[] findAllReservedSeats(String destination, String date, String time) {
+    public synchronized Seat[] findAllReservedSeats(String destination, Date date, Time time) {
         logger.traceEntry("Finding reserved seats for trip: {} on {} at {}", destination, date, time);
         try {
-            Date d = Date.valueOf(date);
-            Time t = Time.valueOf(time);
-            Trip trip = tripRepository.findTripByDestinationDateTime(destination, d, t);
-
+            Trip trip = tripRepository.findTripByDestinationDateTime(destination, date, time);
             if (trip == null) {
                 logger.warn("No trip found for destination: {} on {} at {}", destination, date, time);
                 return new Seat[0];
             }
 
-            Seat[] seats = new Seat[19];
+            Seat[] seats = new Seat[18];
             List<Reservation> reservations = reservationRepository.findAllReservationsForTrip(trip);
             int seatNumber = 0;
 
@@ -87,7 +99,7 @@ public class ServicesImpl implements IServices {
                 seats[seatNumber] = new Seat(seatNumber, "-");
                 seatNumber++;
             }
-
+            System.out.println(Arrays.toString(seats));
             logger.traceExit();
             return seats;
         } catch (Exception e) {
@@ -107,23 +119,33 @@ public class ServicesImpl implements IServices {
     public synchronized void makeReservation(String clientName, Integer noSeats, Trip trip) throws Exception {
         if (trip == null)
             throw new Exception("Trip not found");
-        if (noSeats > trip.getNoSeatsAvailable()) {
+        Trip tripObject = findTripByDestinationDateTime(trip.getDestination(), trip.getDepartureDate(), trip.getDepartureTime());
+        if (noSeats > tripObject.getNoSeatsAvailable()) {
             throw new Exception("Not enough seats available");
         }
-        Reservation reservation = new Reservation(null, clientName, noSeats, trip);
+        Reservation reservation = new Reservation(null, clientName, noSeats, tripObject);
         reservationRepository.save(reservation);
-        Trip updatedTrip = new Trip(trip.getId(), trip.getDestination(),
-                trip.getDepartureDate(), trip.getDepartureTime(),
-                trip.getNoSeatsAvailable() - noSeats);
-        tripRepository.update(trip.getId(), updatedTrip);
-        for (IObserver client : loggedClients.values()) {
+        Trip updatedTrip = new Trip(tripObject.getId(),
+                trip.getDestination(),
+                trip.getDepartureDate(),
+                trip.getDepartureTime(),
+                tripObject.getNoSeatsAvailable() - noSeats);
+        tripRepository.update(tripObject.getId(), updatedTrip);
+        new Thread(() -> {
             try {
-                client.reservationMade(reservation);
+                for (IObserver client : loggedClients.values()) {
+                    try {
+                        client.reservationMade(reservation);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        logger.error("Error notifying client about trip update", e);
+                    }
+                }
             } catch (Exception e) {
-                e.printStackTrace();
-                logger.error("Error notifying client about trip update", e);
+                logger.error("Error notifying clients about reservation", e);
             }
-        }
+        }).start();
+
     }
 
     @Override

@@ -98,7 +98,7 @@ public class MainController implements Initializable, IObserver {
         }
 
         try {
-            Seat[] seats = service.findAllReservedSeats(destination, date, time);
+            Seat[] seats = service.findAllReservedSeats(destination, Date.valueOf(date), Time.valueOf(time));
             lastSearchedTrip = new Trip(-1L, destination, Date.valueOf(date), Time.valueOf(time), 18);
             Platform.runLater(() -> {
                 reservationTable.getItems().clear();
@@ -191,8 +191,8 @@ public class MainController implements Initializable, IObserver {
             try {
                 Seat[] seats = service.findAllReservedSeats(
                         trip.getDestination(),
-                        trip.getDepartureDate().toString(),
-                        trip.getDepartureTime().toString()
+                        trip.getDepartureDate(),
+                        trip.getDepartureTime()
                 );
                 Platform.runLater(() -> reservationTable.getItems().setAll(seats));
             } catch (Exception e) {

@@ -22,7 +22,7 @@ public class JDBCUtils {
 
     private Connection getNewConnection() {
         logger.traceEntry();
-        String url = jdbcProps.getProperty("jdbc.url");
+        String url = jdbcProps.getProperty("jakarta.persistence.jdbc.url");
         logger.info("trying to connect to database ... {}",url);
         Connection con = null;
         try {

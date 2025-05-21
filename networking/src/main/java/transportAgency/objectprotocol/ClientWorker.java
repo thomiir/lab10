@@ -7,7 +7,6 @@ import transportAgency.model.Employee;
 import transportAgency.model.Reservation;
 import transportAgency.model.Seat;
 import transportAgency.model.Trip;
-import transportAgency.services.Exception;
 import transportAgency.services.IObserver;
 import transportAgency.services.IServices;
 
@@ -130,7 +129,7 @@ public class ClientWorker implements Runnable, IObserver {
                 FindSeatsRequest findSeatsRequest = (FindSeatsRequest) request;
                 TripDTO tripDTO = findSeatsRequest.trip();
                 Trip trip = DTOUtils.getFromDTO(tripDTO);
-                Seat[] seats = server.findAllReservedSeats(trip.getDestination(), trip.getDepartureDate().toString(), trip.getDepartureTime().toString());
+                Seat[] seats = server.findAllReservedSeats(trip.getDestination(), trip.getDepartureDate(), trip.getDepartureTime());
                 SeatDTO[] seatDTOs = DTOUtils.getDTO(seats);
                 return new FindSeatsResponse(seatDTOs);
             } catch (java.lang.Exception e) {
@@ -140,7 +139,7 @@ public class ClientWorker implements Runnable, IObserver {
         }
 
         if (request instanceof FindTripsRequest) {
-             logger.debug("FindTripsRequest...");
+            logger.debug("FindTripsRequest...");
             try {
                 Trip[] trips = server.getAllTrips();
                 TripDTO[] tripDTOs = DTOUtils.getDTO(trips);

@@ -6,4 +6,5 @@ include 'networking'
 include 'client'
 include 'server'
 include 'services'
+include 'Rest-Services'
 

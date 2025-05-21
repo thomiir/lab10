@@ -1,0 +1,51 @@
+syntax = "proto3";
+package transportAgency.protobufprotocol;
+
+option java_package = "transportAgency.protobufprotocol";
+option java_outer_classname = "ProtoDefGenerated";
+option java_multiple_files = true;
+
+message Trip {
+  int64 id = 1;
+  string destination = 2;
+  string departureDate = 3;
+  string departureTime = 4;
+  int32 noSeatsAvailable = 5;
+}
+
+message Employee {
+  string username = 1;
+  string password = 2;
+}
+
+message Reservation {
+  string clientName = 1;
+  int32 noSeats = 2;
+  Trip trip = 3;
+}
+
+message Seat {
+  int32 seatNo = 1;
+  string clientName = 2;
+}
+
+message Request {
+  enum Type {Unknown = 0; Login = 1; Logout = 2; FindSeats = 3; FindTrips = 4; MakeReservation = 5; FindEmployee = 6; FindTrip = 7;}
+  Type type = 1;
+  oneof payload {
+    Trip trip = 2;
+    Employee employee = 3;
+    Reservation reservation = 4;
+  }
+}
+
+message Response {
+  enum Type {Unknown = 0; Ok = 1; Error = 2; FindSeats = 3; FindTrips = 4; MakeReservation = 5; FindEmployee = 6; FindTrip = 7;}
+  Type type = 1;
+  string error = 2;
+  repeated Seat seats = 3;
+  repeated Trip trips = 4;
+  Reservation reservation = 5;
+  Employee employee = 6;
+  Trip trip = 7;
+}

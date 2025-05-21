@@ -4,8 +4,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import transportAgency.model.Reservation;
 import transportAgency.model.Trip;
-import transportAgency.persistence.IReservationRepository;
-import transportAgency.persistence.ITripRepository;
+import transportAgency.persistence.interfaces.IReservationRepository;
+import transportAgency.persistence.interfaces.ITripRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -83,7 +83,7 @@ public class ReservationRepository implements IReservationRepository {
     }
 
     @Override
-    public void save(Reservation entity) {
+    public Reservation save(Reservation entity) {
         logger.traceEntry("Save reservation {} ", entity);
         Connection con = dbUtils.getConnection();
         try (PreparedStatement preStmt = con.prepareStatement("insert into reservations (clientName, noSeats, trip) values (?,?,?)")) {
@@ -99,6 +99,7 @@ public class ReservationRepository implements IReservationRepository {
             throw new RuntimeException(e);
         }
         logger.traceExit();
+        return entity;
     }
 
     @Override
@@ -116,7 +117,7 @@ public class ReservationRepository implements IReservationRepository {
     }
 
     @Override
-    public void update(Long id, Reservation entity) {
+    public Reservation update(Long id, Reservation entity) {
         logger.traceEntry("Update reservation {} ", id);
         Connection con = dbUtils.getConnection();
         try (PreparedStatement preparedStatement = con.prepareStatement("update reservations set clientName = ?, noSeats = ?, trip = ? where id = ?")) {
@@ -126,6 +127,7 @@ public class ReservationRepository implements IReservationRepository {
             preparedStatement.setLong(4, id);
             int result = preparedStatement.executeUpdate();
             logger.trace("Updated {} reservations", result);
+            entity.setId(id);
         } catch (SQLException ex) {
             logger.error(ex);
         } catch (Exception e) {
@@ -133,6 +135,7 @@ public class ReservationRepository implements IReservationRepository {
             throw new RuntimeException(e);
         }
         logger.traceExit();
+        return entity;
     }
 
     @Override

@@ -1,17 +1,28 @@
 package transportAgency.model;
 
-import java.io.Serializable;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
-public class Reservation extends Entity<Long> implements Serializable {
-    private final String clientName;
-    private final Integer noSeats;
-    private final Trip trip;
+@jakarta.persistence.Entity
+@Table(name="reservations")
+public class Reservation extends Entity<Long> {
+    private String clientName;
+    private Integer noSeats;
+
+    @ManyToOne
+    @JoinColumn(name="trip")
+    private Trip trip;
 
     public Reservation(Long id, String clientName, Integer noSeats, Trip trip) {
         setId(id);
         this.clientName = clientName;
         this.noSeats = noSeats;
         this.trip = trip;
+    }
+
+    public Reservation() {
+
     }
 
     public String getClientName() {

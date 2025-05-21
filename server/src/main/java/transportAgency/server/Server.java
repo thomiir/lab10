@@ -1,10 +1,10 @@
 package transportAgency.server;
 
-import transportAgency.persistence.IEmployeeRepository;
-import transportAgency.persistence.IReservationRepository;
-import transportAgency.persistence.ITripRepository;
-import transportAgency.persistence.jdbc.EmployeeRepository;
-import transportAgency.persistence.jdbc.ReservationRepository;
+import transportAgency.persistence.hibernate.EmployeeRepository;
+import transportAgency.persistence.interfaces.IReservationRepository;
+import transportAgency.persistence.interfaces.ITripRepository;
+import transportAgency.persistence.interfaces.IEmployeeRepository;
+import transportAgency.persistence.hibernate.ReservationRepository;
 import transportAgency.persistence.jdbc.TripRepository;
 import transportAgency.services.IServices;
 import transportAgency.utils.AbstractServer;
@@ -20,17 +20,17 @@ public class Server {
     public static void main(String[] args) {
         Properties serverProps=new Properties();
         try {
-            serverProps.load(Server.class.getResourceAsStream("/chatserver.properties"));
+            serverProps.load(Server.class.getResourceAsStream("/hibernate.properties"));
             System.out.println("Server properties set. ");
             serverProps.list(System.out);
         } catch (IOException e) {
-            System.err.println("Cannot find chatserver.properties "+e);
+            System.err.println("Cannot find hibernate.properties "+e);
             return;
         }
 
-        IEmployeeRepository emplRepo=new EmployeeRepository(serverProps);
+        IEmployeeRepository emplRepo=new EmployeeRepository();
         ITripRepository tripRepo=new TripRepository(serverProps);
-        IReservationRepository reservationRepo = new ReservationRepository(serverProps, tripRepo);
+        IReservationRepository reservationRepo = new ReservationRepository();
         IServices serverImpl=new ServicesImpl(emplRepo, tripRepo, reservationRepo);
         int ServerPort=defaultPort;
         try {
@@ -42,6 +42,7 @@ public class Server {
         System.out.println("Starting server on port: "+55555);
 
         AbstractServer server = new ChatObjectConcurrentServer(ServerPort,serverImpl);
+//        AbstractServer server = new ProtoConcurrentServer(ServerPort, serverImpl);
         try {
             server.start();
         } catch (Exception e) {

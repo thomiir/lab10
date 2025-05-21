@@ -1,4 +1,4 @@
-package transportAgency.persistence;
+package transportAgency.persistence.interfaces;
 
 import transportAgency.model.Trip;
 

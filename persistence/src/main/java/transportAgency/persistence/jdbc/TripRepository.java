@@ -2,20 +2,24 @@ package transportAgency.persistence.jdbc;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import transportAgency.model.Trip;
-import transportAgency.persistence.ITripRepository;
+import transportAgency.persistence.interfaces.ITripRepository;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+@Component
 public class TripRepository implements ITripRepository {
 
     private static JDBCUtils dbUtils;
 
     private static final Logger logger = LogManager.getLogger();
 
+    @Autowired
     public TripRepository(Properties properties) {
         logger.info("Init TripRepository, properties:{}", properties);
         dbUtils = new JDBCUtils(properties);
@@ -95,17 +99,21 @@ public class TripRepository implements ITripRepository {
     }
 
     @Override
-    public void save(Trip entity) {
+    public Trip save(Trip entity) {
         logger.traceEntry("Save trip {} ", entity.getId());
         Connection con = dbUtils.getConnection();
-        try (PreparedStatement preStmt = con.prepareStatement("insert into trips values (?,?,?,?,?)")) {
-            preStmt.setLong(1, entity.getId());
-            preStmt.setString(2, entity.getDestination());
-            preStmt.setDate(3, entity.getDepartureDate());
-            preStmt.setTime(4, entity.getDepartureTime());
-            preStmt.setInt(5, entity.getNoSeatsAvailable());
+        try (PreparedStatement preStmt = con.prepareStatement("insert into trips (destination, departureDate, departureTime, noSeatsAvailable) values (?,?,?,?)", Statement.RETURN_GENERATED_KEYS)) {
+            preStmt.setString(1, entity.getDestination());
+            preStmt.setDate(2, entity.getDepartureDate());
+            preStmt.setTime(3, entity.getDepartureTime());
+            preStmt.setInt(4, entity.getNoSeatsAvailable());
             int result = preStmt.executeUpdate();
             logger.trace("Saved {} trips", result);
+            if (result > 0) {
+                ResultSet rs = preStmt.getGeneratedKeys();
+                if (rs.next())
+                    entity.setId(rs.getLong(1));
+            }
         } catch (SQLException ex) {
             logger.error(ex);
         } catch (Exception e) {
@@ -113,6 +121,7 @@ public class TripRepository implements ITripRepository {
             throw new RuntimeException(e);
         }
         logger.traceExit();
+        return entity;
     }
 
     @Override
@@ -130,7 +139,7 @@ public class TripRepository implements ITripRepository {
     }
 
     @Override
-    public void update(Long id, Trip entity) {
+    public Trip update(Long id, Trip entity) {
         logger.traceEntry("Update trip {} ", id);
         Connection con = dbUtils.getConnection();
         try (PreparedStatement preparedStatement = con.prepareStatement("update trips set destination = ?, departureDate = ?, departureTime = ?, noSeatsAvailable = ? where id = ?")) {
@@ -140,6 +149,7 @@ public class TripRepository implements ITripRepository {
             preparedStatement.setInt(4, entity.getNoSeatsAvailable());
             preparedStatement.setLong(5, id);
             int result = preparedStatement.executeUpdate();
+            entity.setId(id);
             logger.trace("Updated {} trips", result);
         } catch (SQLException ex) {
             logger.error(ex);
@@ -148,5 +158,6 @@ public class TripRepository implements ITripRepository {
             throw new RuntimeException(e);
         }
         logger.traceExit();
+        return entity;
     }
 }
