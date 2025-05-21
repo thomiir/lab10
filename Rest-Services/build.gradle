@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.5'
+}
+
+group = 'com.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project (':model')
+    implementation project (':persistence')
+    implementation project (':networking')
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.13.1'
+
+    testImplementation('com.jayway.jsonpath:json-path')
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation('org.springframework.boot:spring-boot-starter-test')
+    // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
+    runtimeOnly 'org.xerial:sqlite-jdbc:3.49.1.0'
+
+    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+
+    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-impl
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.6'
+
+    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+}
+
+test {
+    useJUnitPlatform()
+}
